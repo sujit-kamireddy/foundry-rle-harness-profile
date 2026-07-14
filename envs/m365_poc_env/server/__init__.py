@@ -1,0 +1,1 @@
+"""Server package for the M365 hello-world OpenEnv environment."""

@@ -1,0 +1,1 @@
+"""M365 hello-world OpenEnv environment package."""

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "rle.harness/v0.1",
+  "id": "m365-poc",
+  "runtime": {
+    "kind": "openenv",
+    "contract": "gym"
+  },
+  "observationRendering": {
+    "type": "default_json",
+    "promptPath": "problem",
+    "feedbackPath": "feedback",
+    "instructions": "Submit a send_message action with a message that includes both hello and M365."
+  },
+  "actionSpace": {
+    "source": "schema",
+    "schemaRequirement": "required",
+    "discoveredActions": [
+      "send_message"
+    ],
+    "modelActions": [
+      {
+        "actionName": "send_message",
+        "toolName": "send_message",
+        "toolDescription": "Submit a greeting message for the M365 hello-world collaboration demo.",
+        "toolInputMode": "direct"
+      }
+    ],
+    "terminalActions": [
+      "send_message"
+    ],
+    "actions": [
+      {
+        "name": "send_message",
+        "description": "Submit the final greeting message for the current task.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Greeting message. It should include both hello and M365."
+            }
+          },
+          "required": [
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ]
+  },
+  "episodeCompletion": {
+    "mode": "one_shot",
+    "stopCondition": {
+      "type": "done"
+    },
+    "successCondition": {
+      "type": "reward_at_least",
+      "rewardThreshold": 1.0
+    },
+    "maxStepsBehavior": "failure"
+  },
+  "reward": {
+    "aggregation": "final",
+    "successCondition": "reward_at_least",
+    "successRewardThreshold": 1.0
+  },
+  "limits": {
+    "maxStepsPerEpisode": 1,
+    "timeoutSeconds": 60
+  },
+  "evalDefaults": {
+    "split": "validation",
+    "rolloutsPerCase": 1
+  },
+  "trainingDefaults": {
+    "split": "train",
+    "rolloutsPerCase": 4
+  }
+}

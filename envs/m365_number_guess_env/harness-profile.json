@@ -1,0 +1,115 @@
+{
+  "schemaVersion": "rle.harness/v0.1",
+  "id": "number-guess",
+  "runtime": {
+    "kind": "openenv",
+    "contract": "gym"
+  },
+  "observationRendering": {
+    "type": "default_json",
+    "promptPath": "problem",
+    "feedbackPath": "feedback",
+    "instructions": "Call compare(number) to learn if the target is higher, lower, or equal, then guess(number) to commit. Solve it in as few steps as possible."
+  },
+  "actionSpace": {
+    "source": "schema",
+    "schemaRequirement": "required",
+    "discoveredActions": [
+      "compare",
+      "guess"
+    ],
+    "modelActions": [
+      {
+        "actionName": "compare",
+        "toolName": "compare",
+        "toolDescription": "Probe whether the target is higher, lower, or equal to a number, without committing.",
+        "toolInputMode": "direct"
+      },
+      {
+        "actionName": "guess",
+        "toolName": "guess",
+        "toolDescription": "Commit a final guess for the hidden number.",
+        "toolInputMode": "direct"
+      }
+    ],
+    "terminalActions": [
+      "guess"
+    ],
+    "graderActions": [],
+    "ignoredActions": [],
+    "actions": [
+      {
+        "name": "compare",
+        "description": "Probe the range: reports whether the target is higher, lower, or equal to the given number.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action_type": {
+              "type": "string",
+              "const": "compare"
+            },
+            "number": {
+              "type": "integer",
+              "description": "Number to compare the target against."
+            }
+          },
+          "required": [
+            "action_type",
+            "number"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "guess",
+        "description": "Commit a final guess for the hidden number. A correct guess ends the episode.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action_type": {
+              "type": "string",
+              "const": "guess"
+            },
+            "number": {
+              "type": "integer",
+              "description": "The number to guess."
+            }
+          },
+          "required": [
+            "action_type",
+            "number"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ]
+  },
+  "episodeCompletion": {
+    "mode": "episodic_task",
+    "stopCondition": {
+      "type": "done"
+    },
+    "successCondition": {
+      "type": "reward_at_least",
+      "rewardThreshold": 1.0
+    },
+    "maxStepsBehavior": "truncate"
+  },
+  "reward": {
+    "aggregation": "final",
+    "successCondition": "reward_at_least",
+    "successRewardThreshold": 1.0
+  },
+  "limits": {
+    "maxStepsPerEpisode": 10,
+    "timeoutSeconds": 60
+  },
+  "evalDefaults": {
+    "split": "validation",
+    "rolloutsPerCase": 1
+  },
+  "trainingDefaults": {
+    "split": "train",
+    "rolloutsPerCase": 8
+  }
+}

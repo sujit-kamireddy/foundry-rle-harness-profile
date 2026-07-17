@@ -7,6 +7,8 @@ iterate on harness profiles, environment contracts, and collaboration patterns.
 
 - [M365 POC](envs/m365_poc_env/README.md): a tiny OpenEnv-style
 	environment for M365 collaboration proof-of-concepts.
+- [Number Guess](envs/m365_number_guess_env/README.md): a multi-turn OpenEnv
+	environment that rewards efficient, strategy-driven problem solving.
 
 ## Run Tests
 

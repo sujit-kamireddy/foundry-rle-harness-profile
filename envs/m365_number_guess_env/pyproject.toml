@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-m365-number-guess-env"
+version = "0.1.0"
+description = "Number-guessing environment for Foundry RLE/OpenEnv collaboration"
+requires-python = ">=3.10"
+dependencies = [
+    "openenv>=0.3.1",
+    "fastapi>=0.115.0",
+    "pydantic>=2.0.0",
+    "uvicorn>=0.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+server = "m365_number_guess_env.server.app:main"
+
+[tool.setuptools]
+include-package-data = true
+packages = ["m365_number_guess_env", "m365_number_guess_env.server"]
+package-dir = {"m365_number_guess_env" = ".", "m365_number_guess_env.server" = "server"}

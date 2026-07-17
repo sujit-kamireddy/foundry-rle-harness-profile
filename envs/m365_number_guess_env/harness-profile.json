@@ -6,10 +6,11 @@
     "contract": "gym"
   },
   "observationRendering": {
-    "type": "default_json",
+    "type": "prompt_template",
     "promptPath": "problem",
     "feedbackPath": "feedback",
-    "instructions": "Call compare(number) to learn if the target is higher, lower, or equal, then guess(number) to commit. Solve it in as few steps as possible."
+    "instructions": "You are playing the number-guess environment. Respond with exactly one raw JSON action object and no prose, markdown, code fences, or explanation.",
+    "template": "{{prompt}}\n\nCurrent observation: {{observation_json}}\n\nValid actions are exactly one of these JSON shapes:\n{\"action_type\":\"compare\",\"number\":5}\n{\"action_type\":\"guess\",\"number\":7}\n\nUse compare to learn whether the hidden target is higher, lower, or equal. Use guess only when you are ready to commit. The number must be an integer from 1 to 10. Return only the JSON object for your next action."
   },
   "actionSpace": {
     "source": "schema",

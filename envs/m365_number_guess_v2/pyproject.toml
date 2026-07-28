@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-m365-number-guess-v2"
+version = "0.1.0"
+description = "Number-guessing environment for Foundry RLE/OpenEnv collaboration"
+requires-python = ">=3.10"
+dependencies = [
+    "openenv>=0.3.1",
+    "fastapi>=0.115.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.0.0",
+    "uvicorn>=0.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+server = "m365_number_guess_v2.server.app:main"
+
+[tool.setuptools]
+include-package-data = true
+packages = [
+    "m365_number_guess_v2",
+    "m365_number_guess_v2.graders",
+    "m365_number_guess_v2.server",
+    "m365_number_guess_v2.tcaas",
+    "m365_number_guess_v2.tools",
+]
+package-dir = {"m365_number_guess_v2" = ".", "m365_number_guess_v2.graders" = "graders", "m365_number_guess_v2.server" = "server", "m365_number_guess_v2.tcaas" = "tcaas", "m365_number_guess_v2.tools" = "tools"}
+
+[tool.setuptools.package-data]
+"m365_number_guess_v2.tcaas" = ["*.json"]

@@ -1,0 +1,8 @@
+{
+  "action": {
+    "tool_name": "guess",
+    "arguments": {
+      "number": 7
+    }
+  }
+}

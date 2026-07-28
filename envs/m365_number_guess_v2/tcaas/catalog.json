@@ -1,0 +1,145 @@
+{
+  "tenant": {
+    "tenant_id": "tenant-demo",
+    "user_id": "user-demo"
+  },
+  "skills": [
+    {
+      "skill_id": "number-guess",
+      "name": "Number Guess",
+      "workflow": "Number Guess \u2014 you are helping the user find a hidden number. Use the tools available to you to narrow down the range, then commit to an answer. Aim to find it in as few probe steps as possible."
+    }
+  ],
+  "rubrics": [
+    {
+      "rubric_id": "efficient-solve",
+      "skill_id": "number-guess",
+      "rubric_type": "user_facing",
+      "criteria": "Did the assistant find the hidden number, and how few steps did it take?",
+      "weight": 1.0,
+      "range": [0, 1]
+    },
+    {
+      "rubric_id": "probe-before-commit",
+      "skill_id": "number-guess",
+      "rubric_type": "trajectory_non_tool",
+      "criteria": "Did the assistant narrow the range with probes before committing to an answer?",
+      "weight": 0.5,
+      "range": [0, 1]
+    }
+  ],
+  "tasks": {
+    "train": [
+      {
+        "task_id": "guess-train-000",
+        "skill_id": "number-guess",
+        "user_query": "Find the hidden number between 1 and 10.",
+        "data": {"target": 7}
+      },
+      {
+        "task_id": "guess-train-001",
+        "skill_id": "number-guess",
+        "user_query": "I picked a number from 1 to 10. Which one is it?",
+        "data": {"target": 3}
+      },
+      {
+        "task_id": "guess-train-002",
+        "skill_id": "number-guess",
+        "user_query": "Work out my secret number, somewhere in 1-10.",
+        "data": {"target": 10}
+      },
+      {
+        "task_id": "guess-train-003",
+        "skill_id": "number-guess",
+        "user_query": "Guess the number I am thinking of between 1 and 10.",
+        "data": {"target": 1}
+      },
+      {
+        "task_id": "guess-train-004",
+        "skill_id": "number-guess",
+        "user_query": "There is a hidden number in 1-10. Track it down.",
+        "data": {"target": 5}
+      },
+      {
+        "task_id": "guess-train-005",
+        "skill_id": "number-guess",
+        "user_query": "Can you figure out my number? It is between 1 and 10.",
+        "data": {"target": 9}
+      },
+      {
+        "task_id": "guess-train-006",
+        "skill_id": "number-guess",
+        "user_query": "Identify the hidden value in the range 1 to 10.",
+        "data": {"target": 2}
+      },
+      {
+        "task_id": "guess-train-007",
+        "skill_id": "number-guess",
+        "user_query": "Tell me the number I chose from 1 to 10.",
+        "data": {"target": 6}
+      },
+      {
+        "task_id": "guess-train-008",
+        "skill_id": "number-guess",
+        "user_query": "My number sits between 1 and 10. Name it.",
+        "data": {"target": 4}
+      },
+      {
+        "task_id": "guess-train-009",
+        "skill_id": "number-guess",
+        "user_query": "Narrow down and tell me my number in 1-10.",
+        "data": {"target": 8}
+      },
+      {
+        "task_id": "guess-train-010",
+        "skill_id": "number-guess",
+        "user_query": "What number between 1 and 10 am I hiding?",
+        "data": {"target": 2}
+      },
+      {
+        "task_id": "guess-train-011",
+        "skill_id": "number-guess",
+        "user_query": "Pin down my hidden number, 1 through 10.",
+        "data": {"target": 6}
+      }
+    ],
+    "validation": [
+      {
+        "task_id": "guess-val-000",
+        "skill_id": "number-guess",
+        "user_query": "Find the hidden number between 1 and 10.",
+        "data": {"target": 4}
+      },
+      {
+        "task_id": "guess-val-001",
+        "skill_id": "number-guess",
+        "user_query": "Which number from 1 to 10 did I pick?",
+        "data": {"target": 8}
+      },
+      {
+        "task_id": "guess-val-002",
+        "skill_id": "number-guess",
+        "user_query": "Discover my secret number in the range 1-10.",
+        "data": {"target": 1}
+      },
+      {
+        "task_id": "guess-val-003",
+        "skill_id": "number-guess",
+        "user_query": "Guess my number. It is somewhere between 1 and 10.",
+        "data": {"target": 10}
+      },
+      {
+        "task_id": "guess-val-004",
+        "skill_id": "number-guess",
+        "user_query": "Work out the hidden number, 1 through 10.",
+        "data": {"target": 5}
+      },
+      {
+        "task_id": "guess-val-005",
+        "skill_id": "number-guess",
+        "user_query": "Name the number I am thinking of, between 1 and 10.",
+        "data": {"target": 9}
+      }
+    ]
+  }
+}

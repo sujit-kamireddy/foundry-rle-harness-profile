@@ -1,0 +1,8 @@
+{
+  "action": {
+    "tool_name": "compare",
+    "arguments": {
+      "number": 5
+    }
+  }
+}

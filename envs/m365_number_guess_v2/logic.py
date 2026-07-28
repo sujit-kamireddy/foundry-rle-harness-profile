@@ -13,10 +13,6 @@ MAX_STEPS = 10
 ENV_DESCRIPTION = (
     "Number-guessing gym backed by a TCaaS task catalog and a tc_graders grader."
 )
-INSTRUCTIONS = (
-    "Call compare(number) to learn whether the target is higher, lower, or equal, "
-    "then call guess(number) to commit. Solve it in as few steps as possible."
-)
 
 
 def compose_prompt(skill: str, user_query: str) -> str:

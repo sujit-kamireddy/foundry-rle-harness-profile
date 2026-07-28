@@ -23,12 +23,16 @@ class NumberGuessAction(Action):
 
 
 class NumberGuessObservation(Observation):
-    """What the policy sees. ``prompt`` is the only field the harness renders."""
+    """What the policy sees. ``prompt`` is the only field the harness renders.
+
+    Tool guidance deliberately lives in exactly two places: the *protocol* (JSON
+    action shape) in the profile's ``observationRendering.instructions``, and the
+    *workflow* in the skill text, which arrives inside ``prompt``.
+    """
 
     prompt: str = Field(description="Composed skill workflow plus user query.")
     skill: str = Field(description="Skill workflow text, kept separate for debugging.")
     user_query: str = Field(description="The user's request for this task.")
-    instructions: str = Field(description="How to use the available tools.")
     tools: list[dict[str, Any]] = Field(
         default_factory=list,
         description="OpenAI-format schemas for the callable tools.",

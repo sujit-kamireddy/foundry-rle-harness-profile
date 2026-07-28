@@ -9,7 +9,7 @@
     "type": "default_json",
     "promptPath": "prompt",
     "feedbackPath": "feedback",
-    "instructions": "Call the available tools to narrow down the answer, then commit with guess(number)."
+    "instructions": "Respond with exactly one raw JSON action object and no prose, markdown, or code fences. Each action names a tool and its arguments:\n{\"tool_name\":\"compare\",\"arguments\":{\"number\":5}}\n{\"tool_name\":\"guess\",\"arguments\":{\"number\":7}}\nUse compare to learn whether the hidden number is higher, lower, or equal. Use guess only when ready to commit; it ends the episode. The number must be an integer from 1 to 10. The prompt field states the task."
   },
   "actionSpace": {
     "source": "schema",

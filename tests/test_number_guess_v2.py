@@ -75,7 +75,7 @@ class EnvironmentTests(unittest.TestCase):
         first = make_env().reset(seed=42, split="train", episode_id="ep-a")
         second = make_env().reset(seed=42, split="train", episode_id="ep-b")
 
-        visible = ("prompt", "skill", "user_query", "instructions")
+        visible = ("prompt", "skill", "user_query")
         for field in visible:
             self.assertEqual(getattr(first, field), getattr(second, field))
         self.assertNotEqual(first.metadata["episode_id"], second.metadata["episode_id"])

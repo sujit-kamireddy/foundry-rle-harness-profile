@@ -209,8 +209,16 @@ new rubric — see [Known gaps](#known-gaps).
 
 ## What the policy sees
 
+Three channels reach the model, and they vary on different clocks:
+
+```text
+profile.observationRendering.instructions   STATIC   protocol: the action JSON shape
+observation.prompt        (promptPath)      EPISODE  content: skill workflow + user query
+observation.feedback      (feedbackPath)    STEP     result of the last tool call
+```
+
 The harness renders **one** observation field, so the gym composes the prompt
-itself (`logic.compose_prompt`) and the profile points `promptPath` at it.
+itself (`logic.compose_prompt`) and points `promptPath` at it:
 
 ```json
 {
@@ -221,9 +229,20 @@ itself (`logic.compose_prompt`) and the profile points `promptPath` at it.
 }
 ```
 
-`skill` and `user_query` stay as separate fields for debugging, and let us move
-to a `prompt_template` in one profile edit if the harness ever supports
-observation-field placeholders.
+Tool guidance lives in exactly two places, split by who owns it and how often it
+changes:
+
+| Layer | Where | Owner |
+|---|---|---|
+| **Protocol** — emit `{"tool_name":..,"arguments":{..}}` | `harness-profile.json` | the env, static |
+| **Workflow** — how to approach the task | `skill.workflow` in the catalog | TCaaS, per skill |
+
+`skill` and `user_query` also stay as separate observation fields for debugging,
+and let us move to a `prompt_template` in one profile edit if the harness ever
+supports observation-field placeholders.
+
+> How the harness assembles `instructions` and `prompt` into system/user roles
+> is **implementation-defined** — the schema does not specify it.
 
 ---
 

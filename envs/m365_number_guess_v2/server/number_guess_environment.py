@@ -19,7 +19,6 @@ from ..graders.models import GradeRequest, Item, RubricRef, Sample
 from ..graders.trajectory import TrajectoryRecorder
 from ..logic import (
     ENV_DESCRIPTION,
-    INSTRUCTIONS,
     MAX_NUMBER,
     MAX_STEPS,
     MIN_NUMBER,
@@ -194,7 +193,6 @@ class NumberGuessEnvironment(
             prompt=compose_prompt(bundle.skill, bundle.user_query),
             skill=bundle.skill,
             user_query=bundle.user_query,
-            instructions=INSTRUCTIONS,
             tools=self._tools.list_tool_schemas(),
             feedback=feedback,
             step=self._state.step_count,

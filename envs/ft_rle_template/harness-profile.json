@@ -1,0 +1,245 @@
+{
+  "schemaVersion": "rle.harness/v0.1",
+  "id": "default",
+  "runtime": {
+    "kind": "openenv",
+    "contract": "gym"
+  },
+  "observationRendering": {
+    "type": "default_json",
+    "promptPath": "prompt",
+    "feedbackPath": "feedback",
+    "instructions": "Respond with exactly one raw JSON action object and no prose, markdown, or code fences. Each action names a tool and its arguments:\n{\"tool_name\":\"<tool>\",\"arguments\":{...}}\nCall the listed tools to gather what you need, then call {\"tool_name\":\"submit_answer\",\"arguments\":{\"answer\":\"...\"}} to submit your final response. Submitting ends the episode. The prompt field states the task and the workflow you should follow."
+  },
+  "actionSpace": {
+    "source": "schema",
+    "schemaRequirement": "required",
+    "discoveredActions": [
+      "list_pending_onboarding_tasks",
+      "get_employee_record",
+      "list_case_notes",
+      "create_case_note",
+      "submit_answer"
+    ],
+    "modelActions": [
+      {
+        "actionName": "list_pending_onboarding_tasks",
+        "toolName": "list_pending_onboarding_tasks",
+        "toolDescription": "List outstanding onboarding checklist items, optionally filtered by category."
+      },
+      {
+        "actionName": "get_employee_record",
+        "toolName": "get_employee_record",
+        "toolDescription": "Fetch one employee record by employee id."
+      },
+      {
+        "actionName": "list_case_notes",
+        "toolName": "list_case_notes",
+        "toolDescription": "List case notes recorded against an employee."
+      },
+      {
+        "actionName": "create_case_note",
+        "toolName": "create_case_note",
+        "toolDescription": "Record a follow-up case note against an employee."
+      },
+      {
+        "actionName": "submit_answer",
+        "toolName": "submit_answer",
+        "toolDescription": "Submit the final response to the user. Ends the episode."
+      }
+    ],
+    "terminalActions": [
+      "submit_answer"
+    ],
+    "graderActions": [],
+    "ignoredActions": [],
+    "actions": [
+      {
+        "name": "list_pending_onboarding_tasks",
+        "description": "List outstanding onboarding checklist items, optionally filtered by category.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tool_name": {
+              "type": "string",
+              "const": "list_pending_onboarding_tasks"
+            },
+            "arguments": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "description": "Optional filter, for example badge or security."
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "tool_name",
+            "arguments"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "get_employee_record",
+        "description": "Fetch one employee record by employee id.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tool_name": {
+              "type": "string",
+              "const": "get_employee_record"
+            },
+            "arguments": {
+              "type": "object",
+              "properties": {
+                "employee_id": {
+                  "type": "string",
+                  "description": "Employee id, for example e-1043."
+                }
+              },
+              "required": [
+                "employee_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "tool_name",
+            "arguments"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "list_case_notes",
+        "description": "List case notes recorded against an employee.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tool_name": {
+              "type": "string",
+              "const": "list_case_notes"
+            },
+            "arguments": {
+              "type": "object",
+              "properties": {
+                "employee_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "employee_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "tool_name",
+            "arguments"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "create_case_note",
+        "description": "Record a follow-up case note against an employee.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tool_name": {
+              "type": "string",
+              "const": "create_case_note"
+            },
+            "arguments": {
+              "type": "object",
+              "properties": {
+                "employee_id": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string",
+                  "description": "Follow-up text."
+                }
+              },
+              "required": [
+                "employee_id",
+                "note"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "tool_name",
+            "arguments"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "submit_answer",
+        "description": "Submit the final response to the user. Ends the episode.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tool_name": {
+              "type": "string",
+              "const": "submit_answer"
+            },
+            "arguments": {
+              "type": "object",
+              "properties": {
+                "answer": {
+                  "type": "string",
+                  "description": "The final response to the user's request."
+                }
+              },
+              "required": [
+                "answer"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "tool_name",
+            "arguments"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ]
+  },
+  "episodeCompletion": {
+    "mode": "open_ended_tool",
+    "stopCondition": {
+      "type": "done"
+    },
+    "successCondition": {
+      "type": "reward_at_least",
+      "rewardThreshold": 0.5
+    },
+    "maxStepsBehavior": "truncate"
+  },
+  "reward": {
+    "aggregation": "final",
+    "successCondition": "reward_at_least",
+    "successRewardThreshold": 0.5
+  },
+  "limits": {
+    "maxStepsPerEpisode": 12,
+    "timeoutSeconds": 180
+  },
+  "evalDefaults": {
+    "split": "validation",
+    "rolloutsPerCase": 1,
+    "limit": 4
+  },
+  "trainingDefaults": {
+    "split": "train",
+    "rolloutsPerCase": 8
+  },
+  "notes": "Rendered from FT world world-hr-onboarding at content version 2026-07-31.1."
+}

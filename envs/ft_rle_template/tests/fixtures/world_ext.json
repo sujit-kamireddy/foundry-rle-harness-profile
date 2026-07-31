@@ -1,0 +1,77 @@
+{
+  "world_id": "world-ext",
+  "name": "Extension Fixture",
+  "description": "A world whose tool and rubric both require the extension hooks.",
+  "content_version": "1",
+  "skills": [
+    {
+      "skill_id": "probe",
+      "name": "probe",
+      "description": "Probe hidden state.",
+      "workflow": "Call echo_secret, then submit_answer.",
+      "knowledge": []
+    }
+  ],
+  "rubrics": [
+    {
+      "rubric_id": "thorough",
+      "skill_id": "probe",
+      "title": "Thorough",
+      "criteria": "Did the assistant gather enough evidence before answering?",
+      "weight": 1.0,
+      "range": [
+        0.0,
+        1.0
+      ],
+      "outcome": true,
+      "check": "call_count",
+      "check_params": {
+        "target_calls": 2
+      }
+    }
+  ],
+  "tools": [
+    {
+      "tool_name": "echo_secret",
+      "description": "Echo the episode's secret behind a caller-supplied prefix.",
+      "effect": "read",
+      "owner": "tcaas",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "prefix": {
+            "type": "string",
+            "description": "Prefix."
+          }
+        },
+        "required": [
+          "prefix"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "datasets": {},
+  "tasks": {
+    "train": [
+      {
+        "task_id": "ext-t-01",
+        "skill_id": "probe",
+        "user_query": "What is the secret?",
+        "data": {
+          "secret": "swordfish"
+        }
+      }
+    ],
+    "validation": [
+      {
+        "task_id": "ext-v-01",
+        "skill_id": "probe",
+        "user_query": "What is the secret?",
+        "data": {
+          "secret": "haddock"
+        }
+      }
+    ]
+  }
+}

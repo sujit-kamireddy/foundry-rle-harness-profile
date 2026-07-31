@@ -1,0 +1,56 @@
+{
+  "observation": {
+    "prompt": "Number Guess \u2014 you are helping the user find a hidden number. Use the tools available to you to narrow down the range, then commit to an answer. Aim to find it in as few probe steps as possible.\n\nCall compare to test a number and learn whether the target is higher or lower. When you are sure, call submit_answer with the number as your answer. submit_answer ends the episode, so do not call it until you have narrowed the range.\n\nUser: Find the hidden number between 1 and 10.",
+    "skill": "Number Guess \u2014 you are helping the user find a hidden number. Use the tools available to you to narrow down the range, then commit to an answer. Aim to find it in as few probe steps as possible.\n\nCall compare to test a number and learn whether the target is higher or lower. When you are sure, call submit_answer with the number as your answer. submit_answer ends the episode, so do not call it until you have narrowed the range.",
+    "skill_id": "number-guess",
+    "user_query": "Find the hidden number between 1 and 10.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "compare",
+          "description": "Probe whether the hidden target is higher than, lower than, or equal to a number.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer",
+                "description": "Number to compare the target against."
+              }
+            },
+            "required": [
+              "number"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "submit_answer",
+          "description": "Submit the final response to the user. Ends the episode.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "answer": {
+                "type": "string",
+                "description": "The final response to the user's request."
+              }
+            },
+            "required": [
+              "answer"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    ],
+    "feedback": "{\"_request_arguments\":{\"number\":5},\"entity_type\":\"compare\",\"items\":[{\"result\":\"The target is higher than 5.\"}]}",
+    "step": 1,
+    "last_tool": "compare",
+    "pending_effects": []
+  },
+  "reward": 0.0,
+  "done": false
+}

@@ -1,0 +1,286 @@
+{
+  "world_id": "world-it-helpdesk",
+  "name": "IT Helpdesk",
+  "description": "A second, unrelated world. Its only job is to prove that dropping in a catalog needs no code change.",
+  "content_version": "2026-08-01.1",
+  "skills": [
+    {
+      "skill_id": "triage",
+      "name": "Ticket triage",
+      "description": "Rank the open ticket queue.",
+      "workflow": "You are an IT helpdesk triage assistant.\n\nCall list_open_tickets, then get_asset for any ticket whose hardware you need. Rank by severity and cite the ticket id for every item. If a ticket is blocking, escalate it."
+    }
+  ],
+  "rubrics": [
+    {
+      "rubric_id": "cites-tickets",
+      "skill_id": "triage",
+      "title": "Grounded in tool output",
+      "criteria": "Every ticket id in the answer appeared in tool output.",
+      "weight": 1.0,
+      "outcome": true,
+      "check": "cites_grounded_entities",
+      "check_params": {
+        "pattern": "\\bTKT-\\d{4}\\b"
+      }
+    },
+    {
+      "rubric_id": "correct-queue",
+      "skill_id": "triage",
+      "title": "Correct tickets identified",
+      "criteria": "The answer names exactly the tickets that should be worked.",
+      "weight": 1.0,
+      "outcome": true,
+      "check": "matches_expected_entities",
+      "check_params": {
+        "field": "expected_ids",
+        "pattern": "\\bTKT-\\d{4}\\b"
+      }
+    },
+    {
+      "rubric_id": "ranked-by-severity",
+      "skill_id": "triage",
+      "title": "Ranked",
+      "criteria": "The answer orders tickets by severity.",
+      "weight": 0.5,
+      "check": "mentions_any",
+      "check_params": {
+        "words": [
+          "critical",
+          "high",
+          "medium",
+          "low"
+        ]
+      }
+    },
+    {
+      "rubric_id": "escalated-blockers",
+      "skill_id": "triage",
+      "title": "Blockers escalated",
+      "criteria": "A blocking ticket was escalated.",
+      "weight": 0.5,
+      "check": "called_tool",
+      "check_params": {
+        "tool": "escalate_ticket",
+        "when": "requires_escalation"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "tool_name": "list_open_tickets",
+      "description": "List open helpdesk tickets, optionally filtered by severity.",
+      "effect": "read",
+      "owner": "tcaas",
+      "overlay_entities": [
+        "ticket"
+      ],
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "description": "Optional filter."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "serves": {
+        "dataset": "tickets",
+        "entity_type": "ticket",
+        "where": {
+          "status": "open"
+        },
+        "filters": [
+          "severity"
+        ]
+      }
+    },
+    {
+      "tool_name": "get_asset",
+      "description": "Look up a hardware asset by id.",
+      "effect": "read",
+      "owner": "tcaas",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "asset_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id"
+        ],
+        "additionalProperties": false
+      },
+      "serves": {
+        "dataset": "assets",
+        "entity_type": "asset",
+        "required": [
+          "asset_id"
+        ],
+        "not_found_is_error": true
+      }
+    },
+    {
+      "tool_name": "list_escalations",
+      "description": "List escalations raised against a ticket.",
+      "effect": "read",
+      "owner": "tcaas",
+      "overlay_entities": [
+        "escalation"
+      ],
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket_id"
+        ],
+        "additionalProperties": false
+      },
+      "serves": {
+        "dataset": "escalations",
+        "entity_type": "escalation",
+        "required": [
+          "ticket_id"
+        ]
+      }
+    },
+    {
+      "tool_name": "escalate_ticket",
+      "description": "Escalate a ticket to the on-call engineer.",
+      "effect": "write",
+      "owner": "tcaas",
+      "produces_entity": "escalation",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket_id",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "serves": {
+        "dataset": "escalations",
+        "entity_type": "escalation",
+        "appends": true,
+        "required": [
+          "ticket_id",
+          "reason"
+        ],
+        "id_field": "escalation_id",
+        "id_prefix": "esc",
+        "references": [
+          {
+            "field": "ticket_id",
+            "dataset": "tickets",
+            "key": "ticket_id"
+          }
+        ]
+      }
+    }
+  ],
+  "datasets": {
+    "tickets": [
+      {
+        "ticket_id": "TKT-9001",
+        "status": "open",
+        "severity": "critical",
+        "asset_id": "AST-3001",
+        "summary": "Laptop will not boot"
+      },
+      {
+        "ticket_id": "TKT-9002",
+        "status": "open",
+        "severity": "high",
+        "asset_id": "AST-3002",
+        "summary": "VPN disconnects"
+      },
+      {
+        "ticket_id": "TKT-9003",
+        "status": "open",
+        "severity": "low",
+        "asset_id": "AST-3003",
+        "summary": "Requests a second monitor"
+      },
+      {
+        "ticket_id": "TKT-9004",
+        "status": "closed",
+        "severity": "low",
+        "asset_id": "AST-3001",
+        "summary": "Password reset"
+      }
+    ],
+    "assets": [
+      {
+        "asset_id": "AST-3001",
+        "model": "Surface Laptop 6",
+        "warranty": "active"
+      },
+      {
+        "asset_id": "AST-3002",
+        "model": "Surface Pro 10",
+        "warranty": "expired"
+      },
+      {
+        "asset_id": "AST-3003",
+        "model": "Dock 2",
+        "warranty": "active"
+      }
+    ],
+    "escalations": []
+  },
+  "tasks": {
+    "train": [
+      {
+        "task_id": "it-t-01",
+        "skill_id": "triage",
+        "user_query": "What is the single most urgent ticket right now?",
+        "data": {
+          "expected_ids": [
+            "TKT-9001"
+          ],
+          "requires_escalation": true
+        }
+      },
+      {
+        "task_id": "it-t-02",
+        "skill_id": "triage",
+        "user_query": "Which tickets are high severity or worse?",
+        "data": {
+          "expected_ids": [
+            "TKT-9001",
+            "TKT-9002"
+          ]
+        }
+      }
+    ],
+    "validation": [
+      {
+        "task_id": "it-v-01",
+        "skill_id": "triage",
+        "user_query": "Give me the open triage queue.",
+        "data": {
+          "expected_ids": [
+            "TKT-9001",
+            "TKT-9002",
+            "TKT-9003"
+          ]
+        }
+      }
+    ]
+  }
+}

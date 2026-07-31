@@ -1,0 +1,448 @@
+{
+  "world_id": "world-hr-onboarding",
+  "name": "HR Onboarding",
+  "description": "Onboarding assistant over HR records, checklists, and case notes.",
+  "content_version": "2026-07-31.1",
+  "skills": [
+    {
+      "skill_id": "onboarding-brief",
+      "name": "morning-brief",
+      "description": "Summarize today's pending onboarding tasks.",
+      "workflow": "You are an HR onboarding assistant.\n\nWhen asked for a brief, call list_pending_onboarding_tasks first, then call get_employee_record for any hire whose record you need. Group the result by urgency and cite the employee id for every item you mention. Do not guess: if a tool returns nothing, say so.",
+      "knowledge": []
+    },
+    {
+      "skill_id": "badge-provisioning",
+      "name": "badge-provisioning",
+      "description": "Find hires still missing badge provisioning and log follow-up.",
+      "workflow": "You are an HR onboarding assistant handling badge provisioning.\n\nCall list_pending_onboarding_tasks to find outstanding badge items, confirm each hire with get_employee_record, then record a follow-up with create_case_note before answering. Your final answer must name every affected hire by employee id.",
+      "knowledge": []
+    }
+  ],
+  "rubrics": [
+    {
+      "rubric_id": "grounded-in-tools",
+      "skill_id": "onboarding-brief",
+      "title": "Grounded in tool output",
+      "criteria": "The final answer only names employees and tasks that appeared in tool results. Any employee id not returned by a tool is a failure.",
+      "weight": 1.0,
+      "range": [
+        0.0,
+        1.0
+      ],
+      "outcome": true,
+      "check": "cites_grounded_entities",
+      "check_params": {
+        "pattern": "\\be-\\d{4}\\b"
+      }
+    },
+    {
+      "rubric_id": "actionable-summary",
+      "skill_id": "onboarding-brief",
+      "title": "Actionable summary",
+      "criteria": "The answer groups items by urgency and cites an employee id for each item.",
+      "weight": 0.5,
+      "range": [
+        0.0,
+        1.0
+      ],
+      "check": "mentions_any",
+      "check_params": {
+        "words": [
+          "high",
+          "medium",
+          "low",
+          "urgent",
+          "priority"
+        ]
+      }
+    },
+    {
+      "rubric_id": "correct-hires",
+      "skill_id": "badge-provisioning",
+      "title": "Correct hires identified",
+      "criteria": "The answer names exactly the hires with outstanding badge provisioning, no more and no fewer.",
+      "weight": 1.0,
+      "range": [
+        0.0,
+        1.0
+      ],
+      "outcome": true,
+      "check": "matches_expected_entities",
+      "check_params": {
+        "field": "expected_ids",
+        "pattern": "\\be-\\d{4}\\b"
+      }
+    },
+    {
+      "rubric_id": "logged-case-note",
+      "skill_id": "badge-provisioning",
+      "title": "Follow-up logged",
+      "criteria": "A case note was created for the affected hires before the answer was submitted.",
+      "weight": 0.5,
+      "range": [
+        0.0,
+        1.0
+      ],
+      "check": "called_tool",
+      "check_params": {
+        "tool": "create_case_note",
+        "when": "requires_case_note"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "tool_name": "list_pending_onboarding_tasks",
+      "description": "List outstanding onboarding checklist items, optionally filtered by category.",
+      "effect": "read",
+      "owner": "tcaas",
+      "overlay_entities": [
+        "onboarding_task"
+      ],
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Optional filter, for example badge or security."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "serves": {
+        "dataset": "onboarding_tasks",
+        "entity_type": "onboarding_task",
+        "where": {
+          "status": "pending"
+        },
+        "filters": [
+          "category"
+        ]
+      }
+    },
+    {
+      "tool_name": "get_employee_record",
+      "description": "Fetch one employee record by employee id.",
+      "effect": "read",
+      "owner": "tcaas",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "employee_id": {
+            "type": "string",
+            "description": "Employee id, for example e-1043."
+          }
+        },
+        "required": [
+          "employee_id"
+        ],
+        "additionalProperties": false
+      },
+      "serves": {
+        "dataset": "employees",
+        "entity_type": "employee",
+        "required": [
+          "employee_id"
+        ],
+        "not_found_is_error": true
+      }
+    },
+    {
+      "tool_name": "list_case_notes",
+      "description": "List case notes recorded against an employee.",
+      "effect": "read",
+      "owner": "tcaas",
+      "overlay_entities": [
+        "case_note"
+      ],
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "employee_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "employee_id"
+        ],
+        "additionalProperties": false
+      },
+      "serves": {
+        "dataset": "case_notes",
+        "entity_type": "case_note",
+        "required": [
+          "employee_id"
+        ]
+      }
+    },
+    {
+      "tool_name": "create_case_note",
+      "description": "Record a follow-up case note against an employee.",
+      "effect": "write",
+      "owner": "tcaas",
+      "produces_entity": "case_note",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "employee_id": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string",
+            "description": "Follow-up text."
+          }
+        },
+        "required": [
+          "employee_id",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "serves": {
+        "dataset": "case_notes",
+        "entity_type": "case_note",
+        "appends": true,
+        "required": [
+          "employee_id",
+          "note"
+        ],
+        "id_field": "case_note_id",
+        "id_prefix": "cn",
+        "references": [
+          {
+            "field": "employee_id",
+            "dataset": "employees",
+            "key": "employee_id"
+          }
+        ]
+      }
+    }
+  ],
+  "datasets": {
+    "employees": [
+      {
+        "employee_id": "e-1041",
+        "name": "Ada Okafor",
+        "start_date": "2026-07-27",
+        "manager": "m-201"
+      },
+      {
+        "employee_id": "e-1042",
+        "name": "Bo Lindqvist",
+        "start_date": "2026-07-27",
+        "manager": "m-201"
+      },
+      {
+        "employee_id": "e-1043",
+        "name": "Chen Wei",
+        "start_date": "2026-07-28",
+        "manager": "m-204"
+      },
+      {
+        "employee_id": "e-1044",
+        "name": "Dara Singh",
+        "start_date": "2026-07-29",
+        "manager": "m-204"
+      },
+      {
+        "employee_id": "e-1045",
+        "name": "Elif Kaya",
+        "start_date": "2026-07-30",
+        "manager": "m-207"
+      }
+    ],
+    "onboarding_tasks": [
+      {
+        "task_ref": "t-01",
+        "employee_id": "e-1041",
+        "category": "badge",
+        "urgency": "high",
+        "status": "pending"
+      },
+      {
+        "task_ref": "t-02",
+        "employee_id": "e-1043",
+        "category": "badge",
+        "urgency": "high",
+        "status": "pending"
+      },
+      {
+        "task_ref": "t-03",
+        "employee_id": "e-1042",
+        "category": "security",
+        "urgency": "medium",
+        "status": "pending"
+      },
+      {
+        "task_ref": "t-04",
+        "employee_id": "e-1044",
+        "category": "equipment",
+        "urgency": "low",
+        "status": "pending"
+      },
+      {
+        "task_ref": "t-05",
+        "employee_id": "e-1045",
+        "category": "security",
+        "urgency": "medium",
+        "status": "pending"
+      }
+    ],
+    "case_notes": []
+  },
+  "tasks": {
+    "train": [
+      {
+        "task_id": "hr-train-000",
+        "skill_id": "onboarding-brief",
+        "user_query": "Give me my morning brief for today's onboarding tasks.",
+        "data": {
+          "expected_ids": [
+            "e-1041",
+            "e-1042",
+            "e-1043",
+            "e-1044",
+            "e-1045"
+          ]
+        }
+      },
+      {
+        "task_id": "hr-train-001",
+        "skill_id": "badge-provisioning",
+        "user_query": "Which new hires still need badge provisioning?",
+        "data": {
+          "expected_ids": [
+            "e-1041",
+            "e-1043"
+          ],
+          "requires_case_note": true
+        }
+      },
+      {
+        "task_id": "hr-train-002",
+        "skill_id": "onboarding-brief",
+        "user_query": "What security items are outstanding this week?",
+        "data": {
+          "expected_ids": [
+            "e-1042",
+            "e-1045"
+          ]
+        }
+      },
+      {
+        "task_id": "hr-train-003",
+        "skill_id": "badge-provisioning",
+        "user_query": "Log follow-ups for anyone missing a badge and tell me who they are.",
+        "data": {
+          "expected_ids": [
+            "e-1041",
+            "e-1043"
+          ],
+          "requires_case_note": true
+        }
+      },
+      {
+        "task_id": "hr-train-004",
+        "skill_id": "onboarding-brief",
+        "user_query": "Summarize outstanding onboarding checklist items by urgency.",
+        "data": {
+          "expected_ids": [
+            "e-1041",
+            "e-1042",
+            "e-1043",
+            "e-1044",
+            "e-1045"
+          ]
+        }
+      },
+      {
+        "task_id": "hr-train-005",
+        "skill_id": "onboarding-brief",
+        "user_query": "Anything low priority I can defer to next week?",
+        "data": {
+          "expected_ids": [
+            "e-1044"
+          ]
+        }
+      },
+      {
+        "task_id": "hr-train-006",
+        "skill_id": "badge-provisioning",
+        "user_query": "Chen Wei starts tomorrow - is their badge sorted?",
+        "data": {
+          "expected_ids": [
+            "e-1043"
+          ],
+          "requires_case_note": true
+        }
+      },
+      {
+        "task_id": "hr-train-007",
+        "skill_id": "onboarding-brief",
+        "user_query": "Who started this week and what is still open for them?",
+        "data": {
+          "expected_ids": [
+            "e-1041",
+            "e-1042",
+            "e-1043",
+            "e-1044",
+            "e-1045"
+          ]
+        }
+      }
+    ],
+    "validation": [
+      {
+        "task_id": "hr-val-000",
+        "skill_id": "onboarding-brief",
+        "user_query": "Give me the onboarding brief for today.",
+        "data": {
+          "expected_ids": [
+            "e-1041",
+            "e-1042",
+            "e-1043",
+            "e-1044",
+            "e-1045"
+          ]
+        }
+      },
+      {
+        "task_id": "hr-val-001",
+        "skill_id": "badge-provisioning",
+        "user_query": "List hires without badge provisioning and record follow-ups.",
+        "data": {
+          "expected_ids": [
+            "e-1041",
+            "e-1043"
+          ],
+          "requires_case_note": true
+        }
+      },
+      {
+        "task_id": "hr-val-002",
+        "skill_id": "onboarding-brief",
+        "user_query": "What is high urgency right now?",
+        "data": {
+          "expected_ids": [
+            "e-1041",
+            "e-1043"
+          ]
+        }
+      },
+      {
+        "task_id": "hr-val-003",
+        "skill_id": "badge-provisioning",
+        "user_query": "Confirm badge status for everyone starting this week.",
+        "data": {
+          "expected_ids": [
+            "e-1041",
+            "e-1043"
+          ],
+          "requires_case_note": true
+        }
+      }
+    ]
+  }
+}

@@ -4,7 +4,7 @@
 answer from the episode's hidden target, which lives in the task's `data` and
 which the sandbox must never see. So the world supplies the function.
 
-Loaded via `FT_WORLD_TOOLS=m365_dropin.world_tools`.
+Loaded via `FT_WORLD_TOOLS=m365_dropin_for_number_guess_v2.world_tools`.
 
 Nothing here imports from the template. The contract is builtin types only:
 

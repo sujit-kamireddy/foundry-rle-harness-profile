@@ -12,13 +12,13 @@
 ARG BASE_IMAGE=ft-rle-template:latest
 FROM ${BASE_IMAGE}
 
-# PYTHONPATH is already /app in the base, so this lands `m365_dropin` as an
+# PYTHONPATH is already /app in the base, so this lands `m365_dropin_for_number_guess_v2` as an
 # importable package and the two FT_WORLD_* module paths below resolve.
-COPY . /app/m365_dropin
+COPY . /app/m365_dropin_for_number_guess_v2
 
-ENV FT_CATALOG_PATH=/app/m365_dropin/catalog.json \
-    FT_WORLD_TOOLS=m365_dropin.world_tools \
-    FT_WORLD_CHECKS=m365_dropin.world_checks
+ENV FT_CATALOG_PATH=/app/m365_dropin_for_number_guess_v2/catalog.json \
+    FT_WORLD_TOOLS=m365_dropin_for_number_guess_v2.world_tools \
+    FT_WORLD_CHECKS=m365_dropin_for_number_guess_v2.world_checks
 
 # World-level limits. These are also rendered into harness-profile.json, so the
 # two must be changed together or the profile will describe an env that does not

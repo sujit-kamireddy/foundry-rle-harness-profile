@@ -4,7 +4,7 @@ The template ships four generic checks, all of which compare strings: cited ids,
 expected ids, vocabulary, tool-was-called. This world scores something none of
 them reach - *how efficiently* the answer was found - so it brings its own.
 
-Loaded via `FT_WORLD_CHECKS=m365_dropin.world_checks`.
+Loaded via `FT_WORLD_CHECKS=m365_dropin_for_number_guess_v2.world_checks`.
 
 The contract is builtin types only::
 

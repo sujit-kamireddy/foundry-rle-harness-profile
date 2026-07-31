@@ -1,4 +1,4 @@
-# `m365_dropin` — everything M365 supplies on top of the template
+# `m365_dropin_for_number_guess_v2` — everything M365 supplies on top of the template
 
 This folder is the **complete** input side of an FT world. Nothing here is part
 of `ft_rle_template/`; nothing in `ft_rle_template/` was edited to make this
@@ -27,10 +27,10 @@ the real system is `catalog.json` alone.
 ## Run it
 
 ```bash
-cd ..                       # the parent of ft_rle_template/ and m365_dropin/
-export FT_CATALOG_PATH=$PWD/m365_dropin/catalog.json
-export FT_WORLD_TOOLS=m365_dropin.world_tools
-export FT_WORLD_CHECKS=m365_dropin.world_checks
+cd ..                       # the parent of ft_rle_template/ and m365_dropin_for_number_guess_v2/
+export FT_CATALOG_PATH=$PWD/m365_dropin_for_number_guess_v2/catalog.json
+export FT_WORLD_TOOLS=m365_dropin_for_number_guess_v2.world_tools
+export FT_WORLD_CHECKS=m365_dropin_for_number_guess_v2.world_checks
 export FT_MAX_STEPS_PER_EPISODE=10
 export FT_EPISODE_TIMEOUT_S=60
 export FT_SUCCESS_THRESHOLD=1.0
@@ -52,7 +52,7 @@ generic base, then this world as a thin layer over it.
 
 ```bash
 cd ../ft_rle_template && docker build -t ft-rle-template:latest -f server/Dockerfile .
-cd ../m365_dropin && docker build --platform linux/amd64 --provenance=false --sbom=false \
+cd ../m365_dropin_for_number_guess_v2 && docker build --platform linux/amd64 --provenance=false --sbom=false \
   -t devrle.azurecr.io/<project>-<env>:latest .
 
 az acr login --name devrle

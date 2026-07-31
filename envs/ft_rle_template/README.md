@@ -43,12 +43,57 @@ Two things move at different speeds, and that is the point:
 
 ## What M365 actually drops in
 
-**One file: `tcaas/catalog.json`.** Nothing else. No Python is edited to add a
-world, a skill, a tool, a dataset, or a rubric.
+**One file, in the common case: `tcaas/catalog.json`.** No file *in this
+package* is ever edited to add a world, a skill, a tool, a dataset, or a rubric.
+
+Two kinds of world need one small Python module each: a tool that **computes**
+rather than filters, and a rubric the four built-in checks cannot score. Both
+arrive as module paths rather than edits — see [When declaration is not
+enough](#when-declaration-is-not-enough) — and both are offline-mock concerns
+that disappear in production. `../m365_dropin_for_number_guess_v2/` is a
+complete worked example: one required file, two optional ones.
 
 A regression suite enforces this. `tests/test_dropin.py` runs a second,
 unrelated world — IT Helpdesk, different tools, different id shapes, a different
 write entity — end to end. Nothing in the template mentions tickets or assets.
+
+### The catalog envelope
+
+Everything below hangs off one JSON document. Only `world_id` is required; a
+world with no records legitimately ships `"datasets": {}`.
+
+| Key               | Type                  | Holds                                        |
+| ----------------- | --------------------- | -------------------------------------------- |
+| `world_id`        | string **(required)** | stable id for the world                       |
+| `name`            | string                | display name                                  |
+| `description`     | string                | display text                                  |
+| `content_version` | string                | bumped per edit; surfaces in the profile      |
+| `skills`          | list                  | what the agent is being taught                |
+| `tools`           | list                  | the action space                              |
+| `rubrics`         | list                  | how a trajectory is scored                    |
+| `tasks`           | `{split: [task]}`     | splits, conventionally `train` / `validation` |
+| `datasets`        | `{name: [row]}`       | collections the offline mock filters          |
+
+A **skill** carries the instructions the policy actually reads:
+
+```json
+{ "skill_id": "onboarding-brief", "name": "morning-brief",
+  "description": "Short routing label.",
+  "workflow": "Full instructions the agent follows...", "knowledge": [] }
+```
+
+A **task** is one episode. `data` is grading context and **never reaches the
+sandbox** — it is how a hidden target or an expected answer stays hidden:
+
+```json
+{ "task_id": "hr-train-000", "skill_id": "onboarding-brief",
+  "user_query": "Give me my morning brief.",
+  "data": { "expected_ids": ["e-1041", "e-1042"] } }
+```
+
+`pick_task(split, seed)` indexes into `tasks[split]` with no RNG, so one seed
+always yields one task — the property GRPO relies on when it samples K
+trajectories from a single task.
 
 ### Adding a tool
 
@@ -96,7 +141,7 @@ unit-testable on its own.
 
 Both hooks are **offline-mock concerns only**, exactly like `serves`: in
 production the tool is a real MCP endpoint and the rubric is read by an LLM
-judge off its `criteria`. See `extensions.py`, and `../m365_dropin/` for a
+judge off its `criteria`. See `extensions.py`, and `../m365_dropin_for_number_guess_v2/` for a
 complete worked example.
 | `id_field`/`id_prefix` | field to populate with a generated id               |
 | `references`         | referential checks, `{field, dataset, key}`           |
@@ -377,6 +422,37 @@ points.
 
 Every stand-in is marked `REAL SYSTEM:` in the source.
 
+### What M365 does in production
+
+The most common question about this repo is whether a customer creating an
+environment in FT has to author these files. **No.** All three drop-in files are
+stand-ins for things that are *services* in the real system:
+
+| In this repo       | In production                          | Owner                        |
+| ------------------ | -------------------------------------- | ---------------------------- |
+| `catalog.json`     | skills, rubrics, tool specs, tasks      | **TCaaS** storage            |
+| `world_tools.py`   | tool *execution*                        | the customer's **MCP endpoints** |
+| `world_checks.py`  | rubric scoring                          | **tc_graders** LLM judge, reading `criteria` |
+| `serves` bindings  | ignored entirely                        | —                            |
+
+So the production flow is: a user authors a skill, rubrics and samples in FT and
+registers MCP tool endpoints; that content lands in TCaaS. **No file is edited,
+no image is rebuilt, and no environment is re-registered.** Pointing at the real
+services is `TCAAS_BASE_URL` and `GRADERS_BASE_URL`.
+
+This is also why the two extension points are described above as offline-mock
+concerns. Building the number-guess drop-in required exactly two additions to
+this template, and both landed in the layer that gets deleted in production —
+the parts facing the real system needed no change.
+
+One thing is **not** yet settled. Tenancy is deployment configuration
+(`FT_TENANT_ID`, `FT_WORLD_ID`), never a `reset` argument, and `pick_task` takes
+only `(split, seed)`. As built, one deployed RLE environment therefore serves
+one tenant and world, which would mean one registration per tuning job. The
+Foundry RLE lease API does accept per-instance `env_vars`, so scope could
+instead be injected at lease time and let one registered image serve every FT
+environment — that path is untested here.
+
 ## Alignment with `m365_number_guess_v2`
 
 Same decisions, for the same reasons:
@@ -392,7 +468,7 @@ The difference: v2's stated gap is that TCaaS should render `harness-profile.jso
 per deployment. Here `profile.py` does exactly that, and a test fails if the
 checked-in file drifts from the world.
 
-The v2 world itself is reproduced end to end in `../m365_dropin/` — same tasks,
+The v2 world itself is reproduced end to end in `../m365_dropin_for_number_guess_v2/` — same tasks,
 same rubric prose, reward parity verified against its `grading.py`. Building it
 needed no change to the gym, the profile renderer, the action envelope, the
 containment strategies, or the grading contract; only the two offline-mock

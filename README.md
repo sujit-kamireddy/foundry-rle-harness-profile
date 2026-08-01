@@ -3,6 +3,17 @@
 This repository contains small Foundry RLE/OpenEnv examples that can be used to
 iterate on harness profiles, environment contracts, and collaboration patterns.
 
+## Harness Profile Reference
+
+[`harness-profile/`](harness-profile/README.md) holds the specification the
+environments below conform to - the documented `rle.harness/v0.1` schema plus
+five worked example profiles covering bounded games, one-shot answers,
+multi-action tools, MCP tool discovery, and test-based code rewards.
+
+Read it when you need the contract itself; read the examples below when you
+need to see it implemented. Each runnable environment ships its own
+`harness-profile.json`; the drop-in inherits the template's.
+
 ## Examples
 
 The five examples build on each other. To understand the template and how a

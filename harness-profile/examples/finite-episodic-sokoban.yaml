@@ -1,0 +1,55 @@
+schemaVersion: rle.harness/v0.1
+id: default
+runtime:
+  kind: openenv
+  contract: gym
+actionSpace:
+  source: schema
+  schemaRequirement: required
+  discoveredActions: [move]
+  modelActions:
+    - actionName: move
+  terminalActions: []
+  graderActions: []
+  ignoredActions: []
+  # Server-populated from OpenEnv /schema during environment registration.
+  # Kept here as the expected snapshot for docs, review, and examples.
+  actions:
+    - name: move
+      description: Move the player in one cardinal direction.
+      inputSchema:
+        type: object
+        properties:
+          move:
+            type: string
+            enum: [up, down, left, right]
+        required: [move]
+        additionalProperties: false
+observationRendering:
+  type: default_json
+  instructions: >-
+    Play Sokoban. Return JSON with a move field set to up, down, left, or right.
+    Push every box onto a target.
+  promptPath: board
+  feedbackPath: message
+episodeCompletion:
+  mode: episodic_task
+  stopCondition:
+    type: done
+  successCondition:
+    type: reward_at_least
+    rewardThreshold: 1.0
+  maxStepsBehavior: failure
+reward:
+  aggregation: final
+  successCondition: reward_at_least
+  successRewardThreshold: 1.0
+limits:
+  maxStepsPerEpisode: 50
+  timeoutSeconds: 120
+evalDefaults:
+  split: validation
+  rolloutsPerCase: 1
+trainingDefaults:
+  split: train
+  rolloutsPerCase: 8

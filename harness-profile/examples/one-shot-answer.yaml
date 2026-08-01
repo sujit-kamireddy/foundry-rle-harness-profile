@@ -1,0 +1,55 @@
+schemaVersion: rle.harness/v0.1
+id: default
+runtime:
+  kind: openenv
+  contract: gym
+actionSpace:
+  source: schema
+  schemaRequirement: required
+  discoveredActions: [answer]
+  modelActions:
+    - actionName: answer
+  terminalActions: [answer]
+  graderActions: []
+  ignoredActions: []
+  # Server-populated from OpenEnv /schema during environment registration.
+  # Kept here as the expected snapshot for docs, review, and examples.
+  actions:
+    - name: answer
+      description: Submit the final answer for grading.
+      inputSchema:
+        type: object
+        properties:
+          answer:
+            type: string
+            description: Final answer, optionally with short reasoning.
+        required: [answer]
+        additionalProperties: false
+observationRendering:
+  type: default_json
+  instructions: >-
+    Read the problem and submit the final answer as JSON. Reasoning is allowed,
+    but the answer field must end with the final value.
+  promptPath: problem
+  feedbackPath: message
+episodeCompletion:
+  mode: one_shot
+  stopCondition:
+    type: done
+  successCondition:
+    type: reward_at_least
+    rewardThreshold: 1.0
+  maxStepsBehavior: failure
+reward:
+  aggregation: final
+  successCondition: reward_at_least
+  successRewardThreshold: 1.0
+limits:
+  maxStepsPerEpisode: 1
+  timeoutSeconds: 120
+evalDefaults:
+  split: validation
+  rolloutsPerCase: 1
+trainingDefaults:
+  split: train
+  rolloutsPerCase: 8

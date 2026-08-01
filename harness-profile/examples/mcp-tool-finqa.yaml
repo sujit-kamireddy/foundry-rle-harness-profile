@@ -1,0 +1,91 @@
+schemaVersion: rle.harness/v0.1
+id: default
+runtime:
+  kind: openenv
+  contract: mcp
+actionSpace:
+  source: schema_and_list_tools
+  schemaRequirement: required
+  discoveredActions: [get_descriptions, get_table_info, sql_query, submit_answer]
+  modelActions:
+    - actionName: get_descriptions
+    - actionName: get_table_info
+    - actionName: sql_query
+    - actionName: submit_answer
+  terminalActions: [submit_answer]
+  graderActions: []
+  ignoredActions: []
+  # Server-populated from OpenEnv /schema plus MCP tools/list during
+  # environment registration. Kept here as the expected snapshot.
+  actions:
+    - name: get_descriptions
+      description: Get available table names for a company.
+      inputSchema:
+        type: object
+        properties:
+          company_name:
+            type: string
+        required: [company_name]
+        additionalProperties: false
+    - name: get_table_info
+      description: Get table metadata, columns, types, and unique values.
+      inputSchema:
+        type: object
+        properties:
+          company_name:
+            type: string
+          table_name:
+            type: string
+        required: [company_name, table_name]
+        additionalProperties: false
+    - name: sql_query
+      description: Execute a filtered SQL query against one financial table.
+      inputSchema:
+        type: object
+        properties:
+          company_name:
+            type: string
+          table_name:
+            type: string
+          query:
+            type: string
+            description: Must include WHERE/HAVING/etc.; SELECT * is not allowed.
+        required: [company_name, table_name, query]
+        additionalProperties: false
+    - name: submit_answer
+      description: Submit the final answer and end the episode.
+      inputSchema:
+        type: object
+        properties:
+          answer:
+            type: string
+        required: [answer]
+        additionalProperties: false
+observationRendering:
+  type: default_json
+  instructions: >-
+    Use table tools to inspect financial filings, run filtered SQL queries, and
+    submit the final answer.
+  promptPath: message
+  feedbackPath: message
+episodeCompletion:
+  mode: open_ended_tool
+  stopCondition:
+    type: done
+  successCondition:
+    type: reward_at_least
+    rewardThreshold: 1.0
+  maxStepsBehavior: failure
+reward:
+  aggregation: final
+  successCondition: reward_at_least
+  successRewardThreshold: 1.0
+limits:
+  maxStepsPerEpisode: 12
+  timeoutSeconds: 180
+evalDefaults:
+  split: validation
+  rolloutsPerCase: 1
+trainingDefaults:
+  split: train
+  rolloutsPerCase: 4

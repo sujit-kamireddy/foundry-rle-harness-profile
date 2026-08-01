@@ -1,0 +1,565 @@
+# Foundry RLE harness profile reference.
+#
+# Purpose
+# -------
+# A harness profile is the environment-owned contract that teaches Foundry how
+# to drive an OpenEnv-compatible runtime for smoke runs, evals, training, and
+# UI/SDK/CLI experiences.
+#
+# OpenEnv owns the runtime protocol: reset, step, state, schema, and optional
+# tools. The harness profile owns the client semantics layered over that runtime:
+# action exposure, observation rendering, model response handling,
+# rollout/episode stop/success rules, reward folding, and default eval/training
+# knobs.
+#
+
+schemaVersion: rle.harness/v0.1
+# Required.
+# Identifies the version of the harness profile schema.
+#
+# Current value:
+# - rle.harness/v0.1
+#
+# Authoring guidance:
+# - Treat this as immutable with the environment version.
+# - Do not use ad-hoc version strings; compatibility checks key off this value.
+
+id: default
+# Required.
+# Stable profile id inside an environment version.
+#
+# Current milestone guidance:
+# - Use default.
+# - Multiple profiles per environment are a future extension for different
+#   model views or training recipes.
+#
+# Naming guidance:
+# - Use a short slug if/when multiple profiles are introduced.
+# - Avoid spaces and display-only names.
+
+# Section purpose:
+# - Declares the runtime family and call contract that clients must use.
+# - Keep this narrow: it tells Foundry how to talk to the environment, not how
+#   to render observations, expose actions, or score outcomes.
+runtime:
+  kind: openenv
+  # Required.
+  # Runtime family implemented by the environment.
+  #
+  # Supported today:
+  # - openenv
+  #
+  # Future example, not currently accepted by validation:
+  # - m365_rlee could identify an M365 boundary-resident implementation where
+  #   the runtime is still Foundry RLE-compatible but raw prompts, tool calls,
+  #   grader inputs, and trajectories remain inside the M365 boundary.
+  #   Until that runtime family is added, represent these environments as
+  #   kind: openenv with contract: custom and a custom observation renderer.
+
+  contract: gym
+  # Required.
+  # OpenEnv contract shape used by clients when calling the runtime.
+  #
+  # Recommended values:
+  # - gym: JSON object actions through reset/step/state. Use for most RLEs.
+  # - mcp: tool-oriented runtime where action names map to MCP tools/list and
+  #   tools/call. Use when the environment exposes tools.
+  #
+  # Advanced value:
+  # - custom: boundary- or product-specific execution contract. Use only when a
+  #   registered data-plane profile documents how Foundry clients should call it.
+  #
+  # Example:
+  #   contract: gym
+
+# Section purpose:
+# - Defines the model-visible and client-visible action catalog.
+# - The server uses OpenEnv /schema and, when available, MCP tools/list to
+#   populate discovered action names and action specs during registration.
+# - Authors use this section to curate that discovered surface with allowlists,
+#   terminal/grader classification, and ignored actions.
+actionSpace:
+  source: schema
+  # Required.
+  # Where action definitions come from.
+  #
+  # Recommended values:
+  # - schema: server-populated from the OpenEnv /schema response. Use for
+  #   simple gym-style runtimes.
+  # - schema_and_list_tools: server-populated from OpenEnv /schema plus MCP
+  #   tools/list. Use for tool runtimes that expose MCP tools.
+  # - profile: declare action specs directly in this profile. Use when runtime
+  #   schema is incomplete, unstable, or too generic.
+  #
+  # Advanced value:
+  # - custom: action handles are defined by a custom renderer or boundary data
+  #   plane. Use only with a documented private/custom profile.
+
+  schemaRequirement: required
+  # Required.
+  # Whether runtime /schema must be present and usable.
+  #
+  # Recommended values:
+  # - required: default for production-quality environments.
+  # - disabled: only for custom/private profiles where action schemas come from
+  #   the profile or boundary contract, not the runtime.
+  #
+  # Transitional value:
+  # - optional: allowed for legacy or exploratory environments, but avoid for
+  #   externally shared profiles because clients cannot reliably validate actions.
+
+  discoveredActions: []
+  # Optional, but recommended when actions are discovered from runtime schema or
+  # tools/list.
+  #
+  # Purpose:
+  # - Records what the runtime exposed during authoring or registration.
+  # - Helps reviewers detect missing/renamed runtime actions.
+  # - Can include actions that are later filtered out by modelActions,
+  #   graderActions, or ignoredActions.
+  #
+  # Example:
+  #   discoveredActions: [get_table_info, sql_query, submit_answer]
+
+  modelActions:
+    - actionName: action_name
+      # Required.
+      # Runtime action/tool name this model-facing projection maps to.
+
+      toolName: null
+      # Optional.
+      # Model-facing tool alias. Defaults to actionName when omitted.
+      # Use when the model should see a domain-natural tool name while the
+      # runtime still receives the action identified by actionName.
+      #
+      # Examples:
+      # - check_solution for runtime action code.
+      # - query_database for runtime action sql_query.
+      # - submit_answer for runtime action answer.
+
+      toolDescription: null
+      # Optional.
+      # Description shown to the model for toolName. Falls back to the runtime
+      # action description when omitted.
+  # Optional model-visible action projection list.
+  #
+  # Semantics:
+  # - Empty means all non-ignored profile/schema actions are exposed to the
+  #   model using their runtime action names and descriptions.
+  # - Explicit lists are preferred for externally shared profiles.
+  # - terminalActions, graderActions, and ignoredActions continue to refer to
+  #   runtime action names, not model-facing aliases.
+  #
+  # Example:
+  #   modelActions:
+  #     - actionName: list_repos
+  #     - actionName: clone_repo
+  #     - actionName: execute_git_command
+
+  terminalActions: []
+  # Optional.
+  # Actions that should be treated as episode-ending submissions.
+  #
+  # Examples:
+  # - answer
+  # - submit_answer
+  # - code
+  # - submit_artifact
+  #
+  # Do not mark normal exploration/tool actions as terminal.
+
+  graderActions: []
+  # Optional.
+  # Internal actions that grade, inspect hidden state, or compute rewards.
+  # These should not be exposed to the model by default.
+  #
+  # Example:
+  #   graderActions: [grade_artifact]
+
+  ignoredActions: []
+  # Optional.
+  # Diagnostic/admin/runtime actions that should be hidden from UI, model tools,
+  # SDK examples, and training recipes.
+  #
+  # Example:
+  #   ignoredActions: [debug_dump, admin_reset]
+
+  actions:
+    - name: action_name
+      # Required when source is profile.
+      #
+      # Server population behavior:
+      # - When source is schema, the server snapshots action specs from OpenEnv
+      #   /schema into this list during environment registration/discovery.
+      # - When source is schema_and_list_tools, the server snapshots action specs
+      #   from both OpenEnv /schema and MCP tools/list into this list.
+      #
+      # Authoring behavior:
+      # - When source is profile, authors provide this list directly.
+      # - Authors may refine server-populated specs for clearer descriptions,
+      #   examples, and reviewability when the runtime schema is too generic.
+      #
+      # Naming guidance:
+      # - Stable machine name.
+      # - Prefer snake_case for tool-like actions.
+      # - Do not use display names or localized text.
+
+      description: Human-readable action description.
+      # Strongly recommended.
+      # Used by UI, SDK docs, CLI help, and model/tool descriptions.
+
+      inputSchema:
+        type: object
+        properties:
+          field:
+            type: string
+            description: Field shown in UI and SDK examples.
+        required:
+          - field
+        additionalProperties: false
+      # Required for profile-declared actions.
+      #
+      # Use JSON Schema object syntax. Keep schemas strict and runnable:
+      # - type should almost always be object.
+      # - define properties with descriptions.
+      # - set required fields.
+      # - set additionalProperties: false unless the action truly accepts
+      #   arbitrary keys.
+      # - use enum or const for discriminators such as action_type.
+      #
+      # Example discriminator:
+      #   action_type:
+      #     type: string
+      #     const: clone_repo
+
+# Section purpose:
+# - Defines the model-visible view of each environment observation.
+# - Use this to control prompt shape, feedback exposure, and trusted custom
+#   rendering without changing the runtime protocol.
+observationRendering:
+  type: default_json
+  # Required.
+  # Defines how model-backed solvers see observations.
+  #
+  # Recommended values:
+  # - default_json: pass a compact JSON rendering of the model-visible
+  #   observation. Use when the observation already has clear fields.
+  # - prompt_template: render a prompt from selected observation fields. Use
+  #   when the raw observation needs narrative formatting.
+  #
+  # Advanced value:
+  # - custom: call a trusted renderer identified by customRendererRef. Use for
+  #   private boundary profiles or complex domain renderers.
+
+  instructions: >-
+    Natural-language task guidance for model-backed solvers. Explain the task,
+    valid output shape, and any environment-specific constraints.
+  # Strongly recommended for model eval/training.
+  #
+  # Purpose:
+  # - Explains what the model should do in this environment.
+  # - Describes the valid action JSON shape in words.
+  # - Gives task-specific constraints that are not obvious from JSON Schema.
+  #
+  # This is environment/task guidance, not global policy. Do not put tenant
+  # secrets, raw private data, or platform-wide safety policy here.
+  #
+  # Example:
+  #   instructions: >-
+  #     Read the math problem and submit JSON with an answer field. The answer
+  #     may include short reasoning but must end with the final numeric value.
+
+  promptPath: problem
+  # Optional.
+  # Dot-separated path to the primary model-visible prompt inside the reset/step
+  # observation.
+  #
+  # Use when:
+  # - The observation has a stable task prompt field.
+  # - The renderer should avoid dumping unrelated observation state.
+  #
+  # Examples:
+  # - problem
+  # - question
+  # - task.prompt
+  # - safePromptHandle
+  #
+  # Leave null when default_json should render the whole observation.
+
+  feedbackPath: message
+  # Optional.
+  # Dot-separated path to environment feedback shown after invalid or partial
+  # attempts.
+  #
+  # Examples:
+  # - message
+  # - error
+  # - feedback
+  # - safeFeedbackHandle
+  #
+  # This is useful for retry loops and model action repair.
+
+  template: null
+  # Optional. Used only when type is prompt_template.
+  #
+  # Supported variables are implementation-defined. Current server rendering
+  # supports {{initial_observation_json}}, {{observation_json}}, {{step}},
+  # {{previous_reward}}, and {{done}}. For observation fields, prefer
+  # promptPath/feedbackPath instead of custom template placeholders.
+  #
+  # Example:
+  #   template: |-
+  #     Current observation:
+  #     {{observation_json}}
+
+  customRendererRef: null
+  # Required only when type is custom.
+  #
+  # Identifies a trusted renderer by stable name/version. The renderer must be
+  # available to the eval/training client or to the approved boundary data plane.
+  #
+  # Example:
+  #   customRendererRef: m365-rlee/safe-observation-v1
+
+# Section purpose:
+# - Defines optional client-side model response extraction layered over action JSON.
+# - Use this when a model should produce a natural final response that the
+#   harness converts into a runtime action field, without making the generic
+#   recipe know about a specific environment.
+modelResponse:
+  type: direct_action
+  # Required.
+  # How a model response is converted into runtime actions.
+  #
+  # Recommended values:
+  # - direct_action: model uses action JSON or model-visible tools directly.
+  # - final_response: model ends with a natural final response; the harness
+  #   extracts that response and maps it into an action field before submitting
+  #   it to the runtime.
+
+  extraction:
+    mode: null
+    # Optional.
+    # Empty/null means the model must submit direct action JSON or use the
+    # generic action tool. Set when the harness should extract the model's final
+    # response and map it into an action.
+    #
+    # Supported values:
+    # - fenced_block: extract the contents of a Markdown fenced block.
+    # - json_object: extract a JSON object from the final response.
+    # - text: use the final response text directly.
+
+    fenceTag: null
+    # Optional for mode: fenced_block.
+    # Filters to a specific fence tag when provided.
+    # Examples:
+    # - python
+    # - json
+    # - sql
+
+    targetActionName: null
+    # Optional.
+    # Named action wrapper to use when the runtime expects a named action call.
+    # Leave null for simple gym-style action objects.
+
+    targetActionField: null
+    # Required when extraction.mode is set and the target action cannot be
+    # inferred from terminalActions / modelActions / schema.
+    # Examples:
+    # - code
+    # - answer
+    # - sql
+
+  extractionReward:
+    validReward: 0.0
+    # Optional reward delta when the configured response extraction succeeds.
+
+    missingReward: -0.1
+    # Optional reward when the configured response extraction is missing or cannot
+    # be submitted to the runtime.
+
+# Section purpose:
+# - Defines completion semantics for one episode: when a reset/step trajectory
+#   stops, how success is computed, and how max-step exhaustion is interpreted.
+episodeCompletion:
+  mode: episodic_task
+  # Required.
+  # High-level episode shape.
+  #
+  # Recommended values:
+  # - episodic_task: multi-step task/game where runtime done usually ends the
+  #   episode.
+  # - one_shot: one action submission, usually terminal.
+  # - open_ended_tool: tool loop where max steps, submit action, or external
+  #   verifier ends the episode.
+  #
+
+  stopCondition:
+    type: done
+    # Required.
+    # Defines when the harness stops collecting steps.
+    #
+    # Recommended values:
+    # - done: stop when runtime returns done=true.
+    # - max_steps: stop only at limits.maxStepsPerEpisode.
+    # - reward_at_least: stop when a reward threshold is reached.
+    # - observation_equals: stop when a safe observation field reaches a value.
+    # - none: do not use a profile stop condition; external caller owns stop.
+    observationPath: null
+    # Required when type is observation_equals.
+    # Dot-separated path into the observation.
+
+    value: null
+    # Required when type is observation_equals.
+    # Expected value at observationPath.
+
+    rewardThreshold: null
+    # Required when type is reward_at_least.
+
+  successCondition:
+    type: reward_at_least
+    # Required.
+    # Defines whether the episode outcome should count as success.
+    #
+    # Recommended values:
+    # - reward_at_least: success when episode reward reaches threshold.
+    # - done: success follows runtime done=true.
+    # - observation_equals: success when a safe observation field has a value.
+    # - none: no generic success metric; reward or external verifier owns it.
+    observationPath: null
+    value: null
+    rewardThreshold: 1.0
+
+  maxStepsBehavior: failure
+  # Required.
+  # How to interpret hitting limits.maxStepsPerEpisode.
+  #
+  # Recommended values:
+  # - truncate: stop and record truncation; do not imply success or failure.
+  # - failure: reaching max steps means the task failed.
+  # - complete: reaching max steps means the harness intentionally completed the
+  #   episode without computing generic success, such as open-ended tool loops.
+
+  notes: null
+  # Optional.
+  # Human-readable notes for semantics that cannot be inferred from schema.
+  # Use this for reviewer/operator clarity, not machine control.
+
+# Section purpose:
+# - Defines how raw per-step rewards become run-level metrics.
+# - Use this to align environment scoring with success-rate summaries without
+#   baking model/trainer policy into the runtime.
+reward:
+  aggregation: final
+  # Required.
+  # How per-step rewards become the episode/run reward.
+  #
+  # Recommended values:
+  # - final: use the terminal/final step reward. Best for one-shot or final
+  #   answer/code tasks.
+  # - sum: add rewards across steps. Best when each step reward contributes.
+  # - mean: average rewards across steps. Useful for normalized long episodes.
+  # - max: use best observed step reward. Useful for discovery tasks.
+  # - min: use worst observed step reward. Useful for safety or regression tasks.
+
+  successCondition: reward_at_least
+  # Required.
+  # How run summaries derive generic success metrics from reward/done.
+  #
+  # Recommended values:
+  # - reward_at_least: success when aggregated reward >= threshold.
+  # - done: success follows runtime done=true.
+  # - none: do not compute generic success rate.
+
+  successRewardThreshold: 1.0
+  # Required when successCondition is reward_at_least.
+  # Must be finite.
+
+# Section purpose:
+# - Defines the cost, safety, and runtime guardrails clients apply by default
+#   when collecting trajectories.
+# - These limits protect eval/training loops from runaway tasks while still
+#   allowing supported callers to override them for specific runs.
+limits:
+  maxStepsPerEpisode: 50
+  # Required positive integer.
+  # Cost and safety guardrail for eval/training loops.
+  #
+  # Guidance:
+  # - one_shot/code/answer tasks: usually 1.
+  # - finite games: enough to solve a normal board, often 25-200.
+  # - open-ended tool tasks: conservative cap, often 10-50.
+
+  timeoutSeconds: 120
+  # Required positive integer.
+  # Per-episode wall-clock timeout.
+  #
+  # Guidance:
+  # - Keep small for smoke/eval defaults.
+  # - Increase only for known long-running tools or private boundary calls.
+
+# Section purpose:
+# - Defines environment-owned defaults for eval runs.
+# - These values make UI/API/SDK eval creation reproducible without requiring
+#   each caller to know the preferred split, case cap, or sampling count.
+evalDefaults:
+  split: validation
+  # Required.
+  # Environment-owned split used by default eval runs.
+  #
+  # Common values:
+  # - validation
+  # - test
+  # - smoke
+  #
+  # Purpose:
+  # - Gives UI/API/SDK a reproducible measurement default.
+  # - Should not default to train unless the environment has no held-out split.
+
+  limit: null
+  # Optional positive integer.
+  # Default cap on eval cases.
+  #
+  # Guidance:
+  # - null means environment/client default.
+  # - Use a small value for demo/smoke profiles.
+  # - Use a larger value for trusted benchmark profiles.
+
+  rolloutsPerCase: 1
+  # Required positive integer.
+  # Number of trajectories sampled for each eval case by default.
+  #
+  # Guidance:
+  # - Usually 1 for deterministic scoring or normal evals.
+  # - Use >1 for stochastic policies, self-consistency, or variance estimates.
+
+# Section purpose:
+# - Defines environment-owned defaults for training rollout collection.
+# - These values provide a conservative starting recipe; trainers can still
+#   override them for specific experiments.
+trainingDefaults:
+  split: train
+  # Required.
+  # Environment-owned split used for rollout collection during training.
+  #
+  # Common values:
+  # - train
+  # - training
+  # - production_trace_sample
+
+  rolloutsPerCase: 8
+  # Required positive integer.
+  # Number of trajectories sampled per task/case for training by default.
+  #
+  # Guidance:
+  # - Use >1 when the trainer compares multiple attempts per prompt/task.
+  # - Keep conservative for expensive/private tool environments.
+
+# Authoring checklist
+# -------------------
+# - Prefer explicit modelActions, terminalActions, graderActions, and ignoredActions.
+# - Keep action schemas strict with additionalProperties: false.
+# - Use promptPath/feedbackPath when observations include more than the model needs.
+# - Use final reward for one-shot answer/code tasks; sum/mean for dense step rewards.
+# - Use open_ended_tool for multi-tool loops where max steps or a submit action ends the episode.
+# - Avoid reserved values unless the consuming eval/training client explicitly supports them.

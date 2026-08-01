@@ -1,0 +1,86 @@
+schemaVersion: rle.harness/v0.1
+id: default
+runtime:
+  kind: openenv
+  contract: gym
+actionSpace:
+  source: profile
+  schemaRequirement: required
+  discoveredActions: [list_repos, clone_repo, execute_git_command]
+  modelActions:
+    - actionName: list_repos
+    - actionName: clone_repo
+    - actionName: execute_git_command
+  terminalActions: []
+  graderActions: []
+  ignoredActions: []
+  # Author-declared because source is profile. For source: schema or
+  # schema_and_list_tools, the server populates this list during registration.
+  actions:
+    - name: list_repos
+      description: List repositories available from the Git service.
+      inputSchema:
+        type: object
+        properties:
+          action_type:
+            type: string
+            const: list_repos
+        required: [action_type]
+        additionalProperties: false
+    - name: clone_repo
+      description: Clone a named repository into the workspace.
+      inputSchema:
+        type: object
+        properties:
+          action_type:
+            type: string
+            const: clone_repo
+          repo_name:
+            type: string
+          target_dir:
+            type: string
+        required: [action_type, repo_name]
+        additionalProperties: false
+    - name: execute_git_command
+      description: Execute a Git command in a cloned repository.
+      inputSchema:
+        type: object
+        properties:
+          action_type:
+            type: string
+            const: execute_git_command
+          command:
+            type: string
+          working_dir:
+            type: string
+        required: [action_type, command]
+        additionalProperties: false
+observationRendering:
+  type: default_json
+  instructions: >-
+    Use Git tools to inspect repositories, clone a target repository, and execute
+    git commands. Return JSON matching one of the listed action schemas.
+  promptPath: output
+  feedbackPath: error
+episodeCompletion:
+  mode: open_ended_tool
+  stopCondition:
+    type: max_steps
+  successCondition:
+    type: none
+  maxStepsBehavior: complete
+  notes: >-
+    Git tasks may use multiple tool calls before an external verifier or rubric
+    scores the episode.
+reward:
+  aggregation: final
+  successCondition: none
+limits:
+  maxStepsPerEpisode: 20
+  timeoutSeconds: 180
+evalDefaults:
+  split: validation
+  rolloutsPerCase: 1
+trainingDefaults:
+  split: train
+  rolloutsPerCase: 4

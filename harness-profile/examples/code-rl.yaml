@@ -1,0 +1,64 @@
+schemaVersion: rle.harness/v0.1
+id: default
+runtime:
+  kind: openenv
+  contract: gym
+actionSpace:
+  source: schema
+  schemaRequirement: required
+  discoveredActions: [code]
+  modelActions:
+    - actionName: code
+      toolName: check_solution
+      toolDescription: Execute the proposed solution against the task's test cases.
+      toolInputMode: direct
+  terminalActions: [code]
+  graderActions: []
+  ignoredActions: []
+  # Server-populated from OpenEnv /schema during environment registration.
+  # Kept here as the expected snapshot for docs, review, and examples.
+  actions:
+    - name: code
+      description: Submit Python code to grade against the current task.
+      inputSchema:
+        type: object
+        properties:
+          code:
+            type: string
+        required: [code]
+        additionalProperties: false
+observationRendering:
+  type: default_json
+  instructions: null
+  promptPath: problem
+  feedbackPath: message
+modelResponse:
+  type: final_response
+  extraction:
+    mode: fenced_block
+    fenceTag: python
+    targetActionField: code
+  extractionReward:
+    validReward: 0.0
+    missingReward: -0.1
+episodeCompletion:
+  mode: one_shot
+  stopCondition:
+    type: done
+  successCondition:
+    type: reward_at_least
+    rewardThreshold: 1.0
+  maxStepsBehavior: failure
+reward:
+  aggregation: final
+  successCondition: reward_at_least
+  successRewardThreshold: 1.0
+limits:
+  maxStepsPerEpisode: 1
+  timeoutSeconds: 180
+evalDefaults:
+  split: validation
+  rolloutsPerCase: 1
+trainingDefaults:
+  split: train
+  rolloutsPerCase: 8
